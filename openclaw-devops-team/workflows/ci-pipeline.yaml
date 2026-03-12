@@ -1,0 +1,172 @@
+# CI 流水线工作流
+
+## 触发条件
+- GitHub: `push` (develop/main 分支)
+- GitHub: `pull_request` (审查通过)
+- 飞书命令：`/build [branch]`
+
+## 流程
+
+```yaml
+name: CI Pipeline
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  ci-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify CIBot Start
+        uses: openclaw/notify-action@v1
+        with:
+          agent: cibot
+          event: build_start
+          branch: ${{ github.ref }}
+          commit: ${{ github.sha }}
+          
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Install Dependencies
+        id: install
+        run: |
+          npm ci || pip install -r requirements.txt
+          
+      - name: Lint Code
+        id: lint
+        run: |
+          npm run lint || pylint src/
+          
+      - name: Run Unit Tests
+        id: unit_test
+        run: |
+          npm test || pytest tests/ --cov
+          
+      - name: Run Integration Tests
+        id: integration_test
+        run: |
+          npm run test:integration || pytest tests/integration/
+          
+      - name: Build Artifact
+        id: build
+        run: |
+          npm run build || python setup.py build
+          
+      - name: Security Scan
+        id: security
+        run: |
+          npm audit || safety check
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: dist/
+          
+      - name: Notify CIBot Result
+        if: always()
+        uses: openclaw/notify-action@v1
+        with:
+          agent: cibot
+          event: build_complete
+          status: ${{ job.status }}
+          build_number: ${{ github.run_number }}
+          
+      - name: Notify CDBot if Success
+        if: success() && github.ref == 'refs/heads/main'
+        uses: openclaw/notify-action@v1
+        with:
+          agent: cdbot
+          event: build_success
+          version: ${{ github.sha }}
+```
+
+## CIBot 响应
+
+### 收到构建请求
+1. 在飞书构建群发送构建开始通知
+2. 更新 blackboard/STATUS.md
+3. 监听构建各阶段状态
+
+### 构建阶段监控
+| 阶段 | 检查项 | 超时 |
+|------|--------|------|
+| install | 依赖安装成功 | 5min |
+| lint | 无严重警告 | 3min |
+| test | 测试通过率 100% | 15min |
+| build | 产物生成成功 | 10min |
+| security | 无高危漏洞 | 5min |
+
+## 飞书消息
+
+### 构建开始
+```
+🏗️ 构建助手 | Build #456 开始
+
+分支：main
+提交：abc123d (修复登录 bug)
+触发者：@张三
+
+阶段：install → lint → test → build → security
+预计耗时：~8 分钟
+```
+
+### 构建成功
+```
+🏗️ 构建助手 | Build #456 ✅ 成功
+
+📊 测试结果:
+- 单元测试：120/120 ✅ (100%)
+- 集成测试：45/45 ✅ (100%)
+- 覆盖率：87.5%
+
+📦 构建产物:
+- 版本：v1.2.3-abc123d
+- 大小：45.6 MB
+- 下载：[链接]
+
+⏱️ 总耗时：7m 32s
+
+🚀 已通知 CDBot 准备部署
+```
+
+### 构建失败
+```
+🏗️ 构建助手 | Build #456 🔴 失败
+
+失败阶段：test (单元测试)
+
+错误信息:
+```
+test_user_login failed:
+AssertionError: Expected status 200, got 500
+```
+
+📊 测试结果:
+- 单元测试：119/120 ❌ (99.2%)
+- 失败测试：test_user_login
+
+📋 日志：[查看完整日志]
+
+已通知 DevBot 创建 Issue 追踪
+```
+
+## 质量门禁
+
+| 指标 | 要求 |
+|------|------|
+| 单元测试通过率 | 100% |
+| 代码覆盖率 | ≥80% |
+| Lint 错误 | 0 |
+| 安全漏洞 (高危) | 0 |
+
+## 与 Agent 协作
+
+- **← DevBot**: PR 审查通过后触发构建
+- **→ CDBot**: 构建成功后通知部署
+- **→ DevBot**: 构建失败时通知创建 Issue

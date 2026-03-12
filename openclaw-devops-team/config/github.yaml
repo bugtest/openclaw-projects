@@ -1,0 +1,108 @@
+# GitHub 配置
+
+## 仓库配置
+
+```yaml
+github:
+  owner: bugtest
+  repo: openclaw-projects
+  
+  webhooks:
+    - events:
+        - pull_request
+        - issues
+        - push
+      url: https://your-gateway.com/webhook/github
+      
+  branches:
+    main:
+      protected: true
+      require_reviews: 1
+      require_ci: true
+    develop:
+      protected: true
+      require_ci: true
+```
+
+## 工作流集成
+
+### GitHub Actions
+```yaml
+# .github/workflows/devops-team.yml
+name: DevOps Team
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  notify-devops:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify DevOps Team
+        uses: openclaw/notify-action@v1
+        with:
+          webhook-url: ${{ secrets.DEVOPS_WEBHOOK_URL }}
+          event-type: ${{ github.event_name }}
+          payload: ${{ toJson(github.event) }}
+```
+
+## 权限配置
+
+### DevBot 权限
+- [x] 读取仓库内容
+- [x] 创建/更新 Issue
+- [x] 创建/评论 PR
+- [x] 合并 PR
+- [ ] 删除分支
+
+### CIBot 权限
+- [x] 读取仓库内容
+- [x] 触发工作流
+- [x] 上传构建产物
+- [x] 更新提交状态
+
+### CDBot 权限
+- [x] 读取仓库内容
+- [x] 创建部署
+- [x] 更新环境
+- [x] 读取工作流运行
+
+## 环境变量
+
+```bash
+# GitHub
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+GITHUB_OWNER=bugtest
+GITHUB_REPO=openclaw-projects
+
+# Webhook
+DEVOPS_WEBHOOK_URL=https://your-gateway.com/webhook/github
+WEBHOOK_SECRET=your-webhook-secret
+```
+
+## 分支策略
+
+```
+main (生产)
+  ↑
+  | 发布部署
+  |
+develop (开发)
+  ↑
+  | PR 合并
+  |
+feature/* (功能分支)
+```
+
+### 分支保护规则
+
+#### main 分支
+- 需要至少 1 个审查批准
+- 需要 CI 构建通过
+- 禁止直接推送
+
+#### develop 分支
+- 需要 CI 构建通过
+- 禁止直接推送

@@ -1,0 +1,129 @@
+# PR 审查工作流
+
+## 触发条件
+- GitHub: `pull_request.opened`
+- GitHub: `pull_request.synchronize`
+- 飞书命令：`/review <pr-number>`
+
+## 流程
+
+```yaml
+name: PR Review Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify DevBot
+        uses: openclaw/notify-action@v1
+        with:
+          agent: devbot
+          event: pr_review
+          pr_number: ${{ github.event.pull_request.number }}
+          
+      - name: Wait for Review
+        run: |
+          # DevBot will add review comments
+          echo "Waiting for DevBot review..."
+          
+      - name: Check Review Status
+        id: review_status
+        uses: openclaw/check-review@v1
+        with:
+          pr_number: ${{ github.event.pull_request.number }}
+          
+      - name: Notify CIBot if Approved
+        if: steps.review_status.outputs.approved == 'true'
+        uses: openclaw/notify-action@v1
+        with:
+          agent: cibot
+          event: pr_approved
+          pr_number: ${{ github.event.pull_request.number }}
+```
+
+## DevBot 响应
+
+### 收到 PR 审查请求
+1. 获取 PR 详情和变更文件
+2. 执行代码审查
+   - 代码规范检查
+   - 潜在 bug 检测
+   - 安全问题扫描
+   - 性能问题分析
+3. 在 GitHub PR 添加审查评论
+4. 在飞书开发群发送审查通知
+
+### 审查评论格式
+```markdown
+## 代码审查报告
+
+### ✅ 优点
+- 代码结构清晰
+- 单元测试覆盖充分
+
+### ⚠️ 建议修改
+1. **文件 A (行 23)**: 缺少错误处理
+   ```python
+   # 建议添加 try-except
+   ```
+
+2. **文件 B (行 45)**: 变量命名不规范
+   ```
+   建议：`user_data` → `userData`
+   ```
+
+### 🔒 安全问题
+- 无
+
+### 审查结果: **需要修改** (或 **通过**)
+```
+
+## 飞书消息
+
+### 审查开始通知
+```
+🔧 开发助手 | 开始审查 PR #123
+
+标题：修复用户登录 bug
+作者：@张三
+变更：+150 -45 (3 个文件)
+
+预计审查时间：~2 分钟
+```
+
+### 审查完成通知
+```
+🔧 开发助手 | PR #123 审查完成
+
+状态: ⚠️ 需要修改
+
+审查要点:
+• 文件 A: 缺少错误处理
+• 文件 B: 变量命名不规范
+• 文件 C: ✅ 无问题
+
+建议：修改后重新提交
+详细评论已添加到 GitHub PR
+```
+
+## 状态流转
+
+```
+PR 创建
+   ↓
+审查中 (Reviewing)
+   ↓
+   ├── 通过 (Approved) → 通知 CIBot 构建
+   └── 需要修改 (Changes Requested) → 等待重新提交
+```
+
+## 自动化规则
+
+- PR 创建后自动触发审查
+- 审查完成后自动通知相关方
+- 审查通过后自动触发 CI 构建
+- 审查不通过时 @PR 作者

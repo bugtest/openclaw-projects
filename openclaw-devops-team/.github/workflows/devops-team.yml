@@ -1,0 +1,84 @@
+name: DevOps Team Integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+  push:
+    branches: [main, develop]
+  issues:
+    types: [opened, closed]
+
+jobs:
+  notify-devops-team:
+    runs-on: ubuntu-latest
+    name: Notify DevOps Team
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Get PR/Commit Info
+        id: info
+        run: |
+          echo "event_name=${{ github.event_name }}" >> $GITHUB_OUTPUT
+          echo "event_action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "pr_title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+            echo "pr_author=${{ github.event.pull_request.user.login }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "commit=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "author=${{ github.actor }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Notify DevBot (PR Events)
+        if: github.event_name == 'pull_request'
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: '${{ secrets.DEVOPS_WEBHOOK_URL }}/devbot'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "event": "pull_request.${{ github.event.action }}",
+              "pr_number": "${{ steps.info.outputs.pr_number }}",
+              "pr_title": "${{ steps.info.outputs.pr_title }}",
+              "pr_author": "${{ steps.info.outputs.pr_author }}",
+              "branch": "${{ steps.info.outputs.branch }}",
+              "action": "${{ github.event.action }}",
+              "repository": "${{ github.repository }}"
+            }
+            
+      - name: Notify CIBot (Push to main/develop)
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop')
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: '${{ secrets.DEVOPS_WEBHOOK_URL }}/cibot'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "event": "push",
+              "branch": "${{ steps.info.outputs.branch }}",
+              "commit": "${{ github.sha }}",
+              "author": "${{ steps.info.outputs.author }}",
+              "repository": "${{ github.repository }}"
+            }
+            
+      - name: Notify CDBot (PR Merged to main)
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: '${{ secrets.DEVOPS_WEBHOOK_URL }}/cdbot'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "event": "pr_merged",
+              "pr_number": "${{ steps.info.outputs.pr_number }}",
+              "pr_title": "${{ steps.info.outputs.pr_title }}",
+              "target_branch": "main",
+              "repository": "${{ github.repository }}"
+            }
