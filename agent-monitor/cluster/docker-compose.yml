@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Prometheus（中央服务器）
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: openclaw-prometheus-cluster
+    ports:
+      - "9091:9091"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./targets.json:/etc/prometheus/targets/targets.json:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'  # 保留 30 天数据
+      - '--web.listen-address=:9091'
+      - '--web.enable-lifecycle'  # 支持热重载
+      - '--web.enable-admin-api'  # 支持管理 API
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9091/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: openclaw-grafana-cluster
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana-dashboard.json:/var/lib/grafana/dashboards/agent-monitor.json:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      # 允许嵌入 Prometheus
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# 数据卷
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# 网络
+networks:
+  default:
+    name: openclaw-monitor-cluster
+    driver: bridge

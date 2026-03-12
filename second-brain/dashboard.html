@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Second Brain - 个人知识库</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        /* Search */
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            padding-left: 45px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: var(--bg);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 18px;
+        }
+
+        .search-shortcut {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--border);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Memory List */
+        .memory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .memory-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .memory-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .memory-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .type-idea { background: #dbeafe; color: #1e40af; }
+        .type-link { background: #d1fae5; color: #065f46; }
+        .type-note { background: #fef3c7; color: #92400e; }
+        .type-task { background: #fce7f3; color: #9d174d; }
+        .type-memory { background: #e0e7ff; color: #3730a3; }
+
+        .memory-date {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .memory-content {
+            color: var(--text);
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .memory-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: var(--bg);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Quick Add */
+        .quick-add {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .quick-add h3 {
+            margin-bottom: 15px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quick-add-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quick-add-input {
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .quick-add-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .quick-add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-add-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .search-container {
+                max-width: 100%;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🧠</span>
+                    <span>Second Brain</span>
+                </div>
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput"
+                        placeholder="搜索记忆、笔记、链接..."
+                    >
+                    <span class="search-shortcut">⌘K</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">总记忆数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label">今日新增</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="weekCount">0</div>
+                <div class="stat-label">本周新增</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="linkCount">0</div>
+                <div class="stat-label">收藏链接</div>
+            </div>
+        </div>
+
+        <!-- Quick Add -->
+        <div class="quick-add">
+            <h3>⚡ 快速添加记忆</h3>
+            <div class="quick-add-form">
+                <textarea 
+                    class="quick-add-input" 
+                    id="quickAddInput"
+                    placeholder="输入你想记住的内容... (支持链接、想法、待办等)"
+                    rows="3"
+                ></textarea>
+                <button class="quick-add-btn" onclick="addMemory()">保存到 Second Brain</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters" id="filters">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="idea">💡 想法</button>
+            <button class="filter-btn" data-filter="link">🔗 链接</button>
+            <button class="filter-btn" data-filter="note">📝 笔记</button>
+            <button class="filter-btn" data-filter="task">✅ 待办</button>
+            <button class="filter-btn" data-filter="memory">🧠 记忆</button>
+        </div>
+
+        <!-- Memory List -->
+        <div class="memory-list" id="memoryList">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>加载记忆中...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 示例数据（实际使用时从 API 加载）
+        let memories = [
+            {
+                id: 1,
+                type: 'idea',
+                content: 'AWS GenAI 备考资料已整理完成，包含学习计划、知识点总结、3 套模拟题',
+                date: '2026-02-24 13:30',
+                tags: ['AWS', '学习', 'GenAI']
+            },
+            {
+                id: 2,
+                type: 'link',
+                content: 'https://github.com/bugtest/multiagent-framework - Bash 多智能体框架，支持任务分配、消息队列、结果收集',
+                date: '2026-02-24 13:40',
+                tags: ['GitHub', '代码', 'Multi-Agent']
+            },
+            {
+                id: 3,
+                type: 'note',
+                content: 'OpenClaw 的 Memory 系统使用向量数据库，支持语义搜索。配置在 ~/.openclaw/openclaw.json 的 hooks.internal 中',
+                date: '2026-02-24 14:00',
+                tags: ['OpenClaw', '技术笔记']
+            },
+            {
+                id: 4,
+                type: 'task',
+                content: '下周要和刚哥开会讨论 AWS 认证考试安排',
+                date: '2026-02-23 10:00',
+                tags: ['工作', '会议']
+            },
+            {
+                id: 5,
+                type: 'memory',
+                content: '刚哥喜欢用钉钉和飞书，QQ 邮箱 SMTP 发信受限',
+                date: '2026-02-24 07:00',
+                tags: ['用户偏好']
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMemories();
+            updateStats();
+            setupEventListeners();
+        });
+
+        // 渲染记忆列表
+        function renderMemories(filter = 'all') {
+            const list = document.getElementById('memoryList');
+            const filtered = filter === 'all' 
+                ? memories 
+                : memories.filter(m => m.type === filter);
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>暂无记忆</h3>
+                        <p>开始使用 Second Brain 捕获你的想法吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filtered.map(memory => `
+                <div class="memory-card" onclick="viewMemory(${memory.id})">
+                    <div class="memory-header">
+                        <span class="memory-type type-${memory.type}">${getTypeName(memory.type)}</span>
+                        <span class="memory-date">${memory.date}</span>
+                    </div>
+                    <div class="memory-content">${highlightLinks(memory.content)}</div>
+                    <div class="memory-tags">
+                        ${memory.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 更新统计
+        function updateStats() {
+            document.getElementById('totalCount').textContent = memories.length;
+            
+            const today = new Date().toISOString().split('T')[0];
+            const todayMemories = memories.filter(m => m.date.startsWith(today));
+            document.getElementById('todayCount').textContent = todayMemories.length;
+            
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const weekMemories = memories.filter(m => new Date(m.date) >= weekAgo);
+            document.getElementById('weekCount').textContent = weekMemories.length;
+            
+            const links = memories.filter(m => m.type === 'link');
+            document.getElementById('linkCount').textContent = links.length;
+        }
+
+        // 获取类型名称
+        function getTypeName(type) {
+            const names = {
+                idea: '💡 想法',
+                link: '🔗 链接',
+                note: '📝 笔记',
+                task: '✅ 待办',
+                memory: '🧠 记忆'
+            };
+            return names[type] || type;
+        }
+
+        // 高亮链接
+        function highlightLinks(text) {
+            return text.replace(
+                /(https?:\/\/[^\s]+)/g,
+                '<a href="$1" target="_blank" style="color: var(--primary);">$1</a>'
+            );
+        }
+
+        // 添加记忆
+        function addMemory() {
+            const input = document.getElementById('quickAddInput');
+            const content = input.value.trim();
+            
+            if (!content) {
+                alert('请输入内容');
+                return;
+            }
+
+            // 自动检测类型
+            let type = 'note';
+            if (content.match(/https?:\/\//)) type = 'link';
+            else if (content.match(/提醒 | 待办 | 要 /)) type = 'task';
+            else if (content.match(/想法 | 思路 | 建议 /)) type = 'idea';
+
+            const newMemory = {
+                id: Date.now(),
+                type: type,
+                content: content,
+                date: new Date().toLocaleString('zh-CN'),
+                tags: ['新添加']
+            };
+
+            memories.unshift(newMemory);
+            input.value = '';
+            
+            renderMemories(currentFilter);
+            updateStats();
+            
+            // 这里可以调用 API 保存到 OpenClaw Memory
+            console.log('保存到 Memory:', newMemory);
+        }
+
+        // 查看记忆详情
+        function viewMemory(id) {
+            const memory = memories.find(m => m.id === id);
+            if (memory) {
+                alert(`${getTypeName(memory.type)}\n\n${memory.content}\n\n${memory.date}\n\n标签：${memory.tags.join(', ')}`);
+            }
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 过滤器
+            document.getElementById('filters').addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-btn')) {
+                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentFilter = e.target.dataset.filter;
+                    renderMemories(currentFilter);
+                }
+            });
+
+            // 搜索
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = memories.filter(m => 
+                    m.content.toLowerCase().includes(query) ||
+                    m.tags.some(t => t.toLowerCase().includes(query))
+                );
+                
+                const list = document.getElementById('memoryList');
+                if (filtered.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <h3>未找到匹配</h3>
+                            <p>试试其他关键词</p>
+                        </div>
+                    `;
+                } else {
+                    // 复用渲染逻辑
+                    renderMemories('all');
+                    // 高亮搜索结果
+                    filtered.forEach(m => {
+                        const card = document.querySelector(`[onclick="viewMemory(${m.id})"]`);
+                        if (card) card.style.borderColor = 'var(--primary)';
+                    });
+                }
+            });
+
+            // Cmd+K 快捷键
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+            });
+
+            // Enter 添加记忆
+            document.getElementById('quickAddInput').addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    addMemory();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

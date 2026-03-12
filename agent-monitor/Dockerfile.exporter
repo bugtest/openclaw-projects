@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安装依赖
+RUN pip install --no-cache-dir \
+    requests \
+    prometheus-client
+
+# 复制 exporter 脚本
+COPY exporter.py .
+
+# 暴露端口
+EXPOSE 9090
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:9090/health || exit 1
+
+# 启动命令
+CMD ["python", "exporter.py"]

@@ -1,0 +1,64 @@
+name: OpenClaw Agent Trigger
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for agent to execute'
+        required: false
+        default: 'Review this commit'
+
+jobs:
+  agent-task:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare context for agent
+        id: context
+        run: |
+          echo "event_name=${{ github.event_name }}" >> $GITHUB_OUTPUT
+          echo "repo=${{ github.repository }}" >> $GITHUB_OUTPUT
+          echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          
+          # 生成 commit/PR 摘要
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "task_type=pr_review" >> $GITHUB_OUTPUT
+            echo "task_description=Review PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+          else
+            echo "task_type=commit_review" >> $GITHUB_OUTPUT
+            echo "task_description=Review commit ${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger OpenClaw Agent
+        env:
+          OPENCLAW_API_KEY: ${{ secrets.OPENCLAW_API_KEY }}
+          OPENCLAW_ENDPOINT: ${{ secrets.OPENCLAW_ENDPOINT }}
+        run: |
+          TASK="${{ github.event.inputs.task || steps.context.outputs.task_description }}"
+          
+          curl -X POST "${OPENCLAW_ENDPOINT}/api/v1/task" \
+            -H "Authorization: Bearer ${OPENCLAW_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"task\": \"${TASK}\",
+              \"context\": {
+                \"repo\": \"${{ steps.context.outputs.repo }}\",
+                \"ref\": \"${{ steps.context.outputs.ref }}\",
+                \"sha\": \"${{ steps.context.outputs.sha }}\",
+                \"event\": \"${{ steps.context.outputs.event_name }}\",
+                \"workspace\": \"/home/wcg/.openclaw/workspace/github-cicd\"
+              },
+              \"callback_url\": \"${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}\"
+            }"
+
+      - name: Wait for agent (optional)
+        # 如果需要等待 agent 完成，可以添加轮询逻辑
+        # 或者使用 webhook 回调方式
+        run: echo "Agent task triggered asynchronously"

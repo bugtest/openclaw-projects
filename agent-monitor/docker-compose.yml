@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # OpenClaw Metrics Exporter
+  exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile.exporter
+    container_name: openclaw-exporter
+    network_mode: host  # 使用 host 网络，方便访问 OpenClaw CLI
+    restart: unless-stopped
+    volumes:
+      # 挂载 OpenClaw workspace，方便访问 sessions 数据
+      - /home/wcg/.openclaw/workspace:/workspace:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: openclaw-prometheus
+    ports:
+      - "9091:9091"  # 映射到 9091，避免和 exporter 冲突
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'  # 保留 15 天数据
+      - '--web.listen-address=:9091'
+      - '--web.enable-lifecycle'  # 支持热重载
+    restart: unless-stopped
+    depends_on:
+      - exporter
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9091/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: openclaw-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/agent-monitor.json:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# 数据卷
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# 网络
+networks:
+  default:
+    name: openclaw-monitor
+    driver: bridge

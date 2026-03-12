@@ -1,0 +1,89 @@
+{
+  "version": 2,
+  "created_at": "2026-02-24T22:48:00+08:00",
+  "memories": [
+    {
+      "id": 1771955069,
+      "hash": "dc57d8d07fccd42db68a71cadb5c1195",
+      "type": "task",
+      "content": "我要做软件开发兼职，需要关注程序员客栈、码市、实现网、电鸭社区等平台",
+      "date": "2026-02-25 01:44",
+      "tags": [
+        "兼职，工作，软件开发"
+      ]
+    },
+    {
+      "id": 1771949471,
+      "hash": "a1b2c3d4e5f6g7h8i9j0",
+      "type": "link",
+      "content": "https://docs.openclaw.ai 这个文档不错",
+      "date": "2026-02-25 00:11",
+      "tags": [
+        "技术",
+        "OpenClaw"
+      ],
+      "source": "feishu:gangge"
+    },
+    {
+      "id": 1771949470,
+      "hash": "b2c3d4e5f6g7h8i9j0k1",
+      "type": "idea",
+      "content": "有个想法：用 AI 管理服务器",
+      "date": "2026-02-25 00:11",
+      "tags": [
+        "技术"
+      ],
+      "source": "webchat:gangge"
+    },
+    {
+      "id": 1771949467,
+      "hash": "c3d4e5f6g7h8i9j0k1l2",
+      "type": "task",
+      "content": "提醒我下周开会讨论 AWS 认证",
+      "date": "2026-02-25 00:11",
+      "tags": [
+        "技术",
+        "学习"
+      ],
+      "source": "dingtalk:gangge"
+    },
+    {
+      "id": 1771944505,
+      "hash": "d4e5f6g7h8i9j0k1l2m3",
+      "type": "task",
+      "content": "提醒我下周开会",
+      "date": "2026-02-24 22:48",
+      "tags": [
+        "工作",
+        "会议"
+      ]
+    },
+    {
+      "id": 1771944504,
+      "hash": "e5f6g7h8i9j0k1l2m3n4",
+      "type": "link",
+      "content": "https://github.com/bugtest/multiagent-framework",
+      "date": "2026-02-24 22:48",
+      "tags": [
+        "GitHub",
+        "代码"
+      ]
+    },
+    {
+      "id": 1771944493,
+      "hash": "f6g7h8i9j0k1l2m3n4o5",
+      "type": "note",
+      "content": "AWS GenAI 备考资料已整理完成",
+      "date": "2026-02-24 22:48",
+      "tags": [
+        "AWS",
+        "学习",
+        "GenAI"
+      ]
+    }
+  ],
+  "config": {
+    "dedup_enabled": true,
+    "dedup_window_seconds": 3600
+  }
+}

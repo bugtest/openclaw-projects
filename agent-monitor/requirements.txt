@@ -1,0 +1,7 @@
+# OpenClaw Agent Monitor - Python 依赖
+
+# Prometheus 客户端（可选，本 exporter 使用自定义实现）
+# prometheus-client>=0.17.0
+
+# HTTP 请求库
+requests>=2.31.0

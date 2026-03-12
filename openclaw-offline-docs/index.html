@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw 离线文档</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        header {
+            text-align: center;
+            padding: 50px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+        .logo { font-size: 4rem; margin-bottom: 10px; }
+        h1 { color: #ff6b6b; font-size: 2.5rem; margin-bottom: 10px; }
+        .subtitle { color: #888; font-size: 1.1rem; }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 2.5rem; font-weight: bold; color: #4ecdc4; }
+        .stat-label { color: #888; font-size: 0.9rem; }
+        
+        .search-box {
+            max-width: 600px;
+            margin: 30px auto;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1rem;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            outline: none;
+        }
+        .search-box input:focus { border-color: #4ecdc4; }
+        
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .category-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .category-card:hover {
+            transform: translateY(-3px);
+            border-color: #ff6b6b;
+            background: rgba(255,107,107,0.1);
+        }
+        .category-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .category-title { font-size: 1.3rem; color: #fff; margin-bottom: 5px; }
+        .category-count { color: #4ecdc4; font-size: 0.9rem; margin-bottom: 15px; }
+        
+        .doc-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .doc-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .doc-list a {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .doc-list a:hover { color: #ff6b6b; }
+        
+        .doc-viewer {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .doc-viewer.active { display: block; }
+        .doc-viewer-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            font-size: 2.5rem;
+            color: #fff;
+            cursor: pointer;
+            z-index: 1001;
+        }
+        .doc-content {
+            background: #1a1a2e;
+            padding: 40px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .doc-content h1 { color: #ff6b6b; margin-bottom: 20px; }
+        .doc-content h2 { color: #4ecdc4; margin: 30px 0 15px; }
+        .doc-content h3 { color: #fff; margin: 25px 0 12px; }
+        .doc-content p { margin-bottom: 15px; color: #ccc; }
+        .doc-content code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: #ff6b6b;
+        }
+        .doc-content pre {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .doc-content pre code {
+            background: none;
+            padding: 0;
+            color: #e0e0e0;
+        }
+        .doc-content ul, .doc-content ol {
+            margin: 15px 0;
+            padding-left: 30px;
+            color: #ccc;
+        }
+        .doc-content li { margin-bottom: 8px; }
+        .doc-content a { color: #4ecdc4; }
+        .doc-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .doc-content th, .doc-content td {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px;
+            text-align: left;
+        }
+        .doc-content th { background: rgba(255,255,255,0.1); color: #fff; }
+        .doc-content td { color: #ccc; }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            margin-top: 60px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🦞</div>
+            <h1>OpenClaw 离线文档</h1>
+            <p class="subtitle">完全本地化 · 无需联网 · 随时查阅</p>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="total-docs">0</div>
+                    <div class="stat-label">文档总数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-categories">9</div>
+                    <div class="stat-label">分类</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">本地存储</div>
+                </div>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="search" placeholder="🔍 搜索文档..." oninput="searchDocs()">
+            </div>
+        </header>
+        
+        <main class="categories" id="categories"></main>
+        
+        <footer>
+            <p>OpenClaw 离线文档 by 小 A 🤖</p>
+            <p>抓取时间：<span id="fetch-time"></span> | 共 258 篇文档</p>
+            <p style="margin-top: 10px;">本地路径：<code>~/workspace/openclaw-offline-docs/</code></p>
+        </footer>
+    </div>
+    
+    <div class="doc-viewer" id="docViewer" onclick="closeDoc(event)">
+        <div class="close-btn" onclick="document.getElementById('docViewer').classList.remove('active')">&times;</div>
+        <div class="doc-viewer-content">
+            <div class="doc-content" id="docContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        const docs = {
+            "get-started": [
+                {"title": "Getting Started", "file": "getting-started.md"},
+                {"title": "Wizard", "file": "wizard.md"},
+                {"title": "Onboarding Overview", "file": "onboarding-overview.md"},
+                {"title": "Setup", "file": "setup.md"},
+                {"title": "OpenClaw", "file": "openclaw.md"},
+                {"title": "Bootstrapping", "file": "bootstrapping.md"},
+                {"title": "Showcase", "file": "showcase.md"},
+                {"title": "Lore", "file": "lore.md"}
+            ],
+            "install": [
+                {"title": "Node.js", "file": "node.md"},
+                {"title": "Docker", "file": "docker.md"},
+                {"title": "Podman", "file": "podman.md"},
+                {"title": "Bun", "file": "bun.md"},
+                {"title": "Nix", "file": "nix.md"},
+                {"title": "Ansible", "file": "ansible.md"},
+                {"title": "Migrating", "file": "migrating.md"},
+                {"title": "Updating", "file": "updating.md"},
+                {"title": "Uninstall", "file": "uninstall.md"},
+                {"title": "Fly.io", "file": "fly.md"},
+                {"title": "GCP", "file": "gcp.md"},
+                {"title": "Hetzner", "file": "hetzner.md"},
+                {"title": "Northflank", "file": "northflank.md"},
+                {"title": "Railway", "file": "railway.md"},
+                {"title": "Render", "file": "render.md"}
+            ],
+            "channels": [
+                {"title": "WhatsApp", "file": "whatsapp.md"},
+                {"title": "Telegram", "file": "telegram.md"},
+                {"title": "Discord", "file": "discord.md"},
+                {"title": "iMessage", "file": "imessage.md"},
+                {"title": "Signal", "file": "signal.md"},
+                {"title": "Slack", "file": "slack.md"},
+                {"title": "Mattermost", "file": "mattermost.md"},
+                {"title": "Matrix", "file": "matrix.md"},
+                {"title": "Google Chat", "file": "googlechat.md"},
+                {"title": "MS Teams", "file": "msteams.md"},
+                {"title": "IRC", "file": "irc.md"},
+                {"title": "Feishu", "file": "feishu.md"},
+                {"title": "LINE", "file": "line.md"},
+                {"title": "Nextcloud Talk", "file": "nextcloud-talk.md"},
+                {"title": "Nostr", "file": "nostr.md"},
+                {"title": "Synology Chat", "file": "synology-chat.md"},
+                {"title": "Twitch", "file": "twitch.md"},
+                {"title": "Zalo", "file": "zalo.md"},
+                {"title": "BlueBubbles", "file": "bluebubbles.md"},
+                {"title": "Tlon", "file": "tlon.md"},
+                {"title": "Channel Routing", "file": "channel-routing.md"},
+                {"title": "Group Messages", "file": "group-messages.md"},
+                {"title": "Groups", "file": "groups.md"},
+                {"title": "Broadcast Groups", "file": "broadcast-groups.md"},
+                {"title": "Pairing", "file": "pairing.md"},
+                {"title": "Location", "file": "location.md"},
+                {"title": "Troubleshooting", "file": "troubleshooting.md"}
+            ],
+            "agents": [
+                {"title": "Agent", "file": "agent.md"},
+                {"title": "Agent Loop", "file": "agent-loop.md"},
+                {"title": "Agent Workspace", "file": "agent-workspace.md"},
+                {"title": "Session", "file": "session.md"},
+                {"title": "Session Pruning", "file": "session-pruning.md"},
+                {"title": "Session Tool", "file": "session-tool.md"},
+                {"title": "Memory", "file": "memory.md"},
+                {"title": "AGENTS.md", "file": "AGENTS.md"},
+                {"title": "SOUL.md", "file": "SOUL.md"},
+                {"title": "BOOTSTRAP.md", "file": "BOOTSTRAP.md"},
+                {"title": "HEARTBEAT.md", "file": "HEARTBEAT.md"},
+                {"title": "TOOLS.md", "file": "TOOLS.md"},
+                {"title": "USER.md", "file": "USER.md"},
+                {"title": "BOOT.md", "file": "BOOT.md"}
+            ],
+            "tools": [
+                {"title": "Sub-Agents", "file": "subagents.md"},
+                {"title": "Agent Send", "file": "agent-send.md"},
+                {"title": "ACP Agents", "file": "acp-agents.md"},
+                {"title": "Skills", "file": "skills.md"},
+                {"title": "Skills Config", "file": "skills-config.md"},
+                {"title": "Creating Skills", "file": "creating-skills.md"},
+                {"title": "Slash Commands", "file": "slash-commands.md"},
+                {"title": "Exec", "file": "exec.md"},
+                {"title": "Exec Approvals", "file": "exec-approvals.md"},
+                {"title": "Elevated", "file": "elevated.md"},
+                {"title": "Browser", "file": "browser.md"},
+                {"title": "Chrome Extension", "file": "chrome-extension.md"},
+                {"title": "Browser Login", "file": "browser-login.md"},
+                {"title": "Browser Troubleshooting", "file": "browser-linux-troubleshooting.md"},
+                {"title": "Web Tools", "file": "web.md"},
+                {"title": "Firecrawl", "file": "firecrawl.md"},
+                {"title": "PDF", "file": "pdf.md"},
+                {"title": "Diffs", "file": "diffs.md"},
+                {"title": "Apply Patch", "file": "apply-patch.md"},
+                {"title": "Reactions", "file": "reactions.md"},
+                {"title": "Plugin", "file": "plugin.md"},
+                {"title": "Lobster", "file": "lobster.md"},
+                {"title": "LLM Task", "file": "llm-task.md"},
+                {"title": "Thinking", "file": "thinking.md"},
+                {"title": "Loop Detection", "file": "loop-detection.md"},
+                {"title": "Multi-Agent Sandbox", "file": "multi-agent-sandbox-tools.md"},
+                {"title": "TTS", "file": "tts.md"},
+                {"title": "Gateway CLI", "file": "gateway.md"},
+                {"title": "Channels CLI", "file": "channels.md"},
+                {"title": "Sessions CLI", "file": "sessions.md"},
+                {"title": "Agents CLI", "file": "agents.md"},
+                {"title": "Nodes CLI", "file": "nodes.md"},
+                {"title": "Message CLI", "file": "message.md"},
+                {"title": "Memory CLI", "file": "memory.md"},
+                {"title": "Cron CLI", "file": "cron.md"},
+                {"title": "Models CLI", "file": "models.md"},
+                {"title": "Config CLI", "file": "config.md"},
+                {"title": "Status CLI", "file": "status.md"},
+                {"title": "Logs CLI", "file": "logs.md"},
+                {"title": "Health CLI", "file": "health.md"},
+                {"title": "Doctor CLI", "file": "doctor.md"},
+                {"title": "Onboard CLI", "file": "onboard.md"},
+                {"title": "Plugins CLI", "file": "plugins.md"},
+                {"title": "Skills CLI", "file": "skills.md"},
+                {"title": "Update CLI", "file": "update.md"},
+                {"title": "Uninstall CLI", "file": "uninstall.md"},
+                {"title": "ClawHub", "file": "clawhub.md"}
+            ],
+            "models": [
+                {"title": "Models Quickstart", "file": "models.md"},
+                {"title": "OpenAI", "file": "openai.md"},
+                {"title": "Anthropic", "file": "anthropic.md"},
+                {"title": "Qwen", "file": "qwen.md"},
+                {"title": "GLM", "file": "glm.md"},
+                {"title": "Moonshot", "file": "moonshot.md"},
+                {"title": "Z.AI", "file": "zai.md"},
+                {"title": "MiniMax", "file": "minimax.md"},
+                {"title": "Mistral", "file": "mistral.md"},
+                {"title": "NVIDIA", "file": "nvidia.md"},
+                {"title": "Bedrock", "file": "bedrock.md"},
+                {"title": "Ollama", "file": "ollama.md"},
+                {"title": "vLLM", "file": "vllm.md"},
+                {"title": "OpenRouter", "file": "openrouter.md"},
+                {"title": "HuggingFace", "file": "huggingface.md"},
+                {"title": "Qianfan", "file": "qianfan.md"},
+                {"title": "Deepgram", "file": "deepgram.md"},
+                {"title": "Venice", "file": "venice.md"},
+                {"title": "Xiaomi", "file": "xiaomi.md"},
+                {"title": "GitHub Copilot", "file": "github-copilot.md"},
+                {"title": "Cloudflare AI Gateway", "file": "cloudflare-ai-gateway.md"},
+                {"title": "Vercel AI Gateway", "file": "vercel-ai-gateway.md"}
+            ],
+            "platforms": [
+                {"title": "macOS App", "file": "macos.md"},
+                {"title": "iOS App", "file": "ios.md"},
+                {"title": "Android App", "file": "android.md"},
+                {"title": "Linux", "file": "linux.md"},
+                {"title": "Windows", "file": "windows.md"},
+                {"title": "Raspberry Pi", "file": "raspberry-pi.md"},
+                {"title": "DigitalOcean", "file": "digitalocean.md"},
+                {"title": "Oracle Cloud", "file": "oracle.md"},
+                {"title": "Bundled Gateway", "file": "bundled-gateway.md"},
+                {"title": "Canvas", "file": "canvas.md"},
+                {"title": "Menu Bar", "file": "menu-bar.md"},
+                {"title": "Icon", "file": "icon.md"},
+                {"title": "Voice Overlay", "file": "voice-overlay.md"},
+                {"title": "Voice Wake", "file": "voicewake.md"},
+                {"title": "WebChat", "file": "webchat.md"},
+                {"title": "Permissions", "file": "permissions.md"},
+                {"title": "Health", "file": "health.md"},
+                {"title": "Logging", "file": "logging.md"},
+                {"title": "Remote", "file": "remote.md"},
+                {"title": "Dev Setup", "file": "dev-setup.md"},
+                {"title": "Skills", "file": "skills.md"},
+                {"title": "XPC", "file": "xpc.md"},
+                {"title": "Peekaboo", "file": "peekaboo.md"},
+                {"title": "Child Process", "file": "child-process.md"},
+                {"title": "Signing", "file": "signing.md"},
+                {"title": "Release", "file": "release.md"},
+                {"title": "Camera", "file": "camera.md"},
+                {"title": "Images", "file": "images.md"},
+                {"title": "Audio", "file": "audio.md"},
+                {"title": "Talk", "file": "talk.md"},
+                {"title": "Location Command", "file": "location-command.md"},
+                {"title": "Media Understanding", "file": "media-understanding.md"},
+                {"title": "Nodes Troubleshooting", "file": "troubleshooting.md"}
+            ],
+            "gateway-ops": [
+                {"title": "Architecture", "file": "architecture.md"},
+                {"title": "Configuration", "file": "configuration.md"},
+                {"title": "Configuration Reference", "file": "configuration-reference.md"},
+                {"title": "Configuration Examples", "file": "configuration-examples.md"},
+                {"title": "Authentication", "file": "authentication.md"},
+                {"title": "Sandboxing", "file": "sandboxing.md"},
+                {"title": "Secrets", "file": "secrets.md"},
+                {"title": "Logging", "file": "logging.md"},
+                {"title": "Health", "file": "health.md"},
+                {"title": "Doctor", "file": "doctor.md"},
+                {"title": "Troubleshooting", "file": "troubleshooting.md"},
+                {"title": "Remote", "file": "remote.md"},
+                {"title": "Remote Gateway", "file": "remote-gateway-readme.md"},
+                {"title": "Tailscale", "file": "tailscale.md"},
+                {"title": "Bonjour", "file": "bonjour.md"},
+                {"title": "Multiple Gateways", "file": "multiple-gateways.md"},
+                {"title": "Gateway Lock", "file": "gateway-lock.md"},
+                {"title": "Protocol", "file": "protocol.md"},
+                {"title": "Bridge Protocol", "file": "bridge-protocol.md"},
+                {"title": "Network Model", "file": "network-model.md"},
+                {"title": "Discovery", "file": "discovery.md"},
+                {"title": "CLI Backends", "file": "cli-backends.md"},
+                {"title": "Background Process", "file": "background-process.md"},
+                {"title": "Tools Invoke API", "file": "tools-invoke-http-api.md"},
+                {"title": "Pairing", "file": "pairing.md"},
+                {"title": "Heartbeat", "file": "heartbeat.md"},
+                {"title": "OpenAI HTTP API", "file": "openai-http-api.md"},
+                {"title": "OpenResponses API", "file": "openresponses-http-api.md"},
+                {"title": "Local Models", "file": "local-models.md"},
+                {"title": "Cron Jobs", "file": "cron-jobs.md"},
+                {"title": "Cron vs Heartbeat", "file": "cron-vs-heartbeat.md"},
+                {"title": "Webhook", "file": "webhook.md"},
+                {"title": "Hooks", "file": "hooks.md"},
+                {"title": "Poll", "file": "poll.md"},
+                {"title": "Gmail PubSub", "file": "gmail-pubsub.md"},
+                {"title": "Auth Monitoring", "file": "auth-monitoring.md"},
+                {"title": "Control UI", "file": "control-ui.md"},
+                {"title": "Dashboard", "file": "dashboard.md"},
+                {"title": "TUI", "file": "tui.md"}
+            ],
+            "reference": [
+                {"title": "Credits", "file": "credits.md"},
+                {"title": "API Usage Costs", "file": "api-usage-costs.md"},
+                {"title": "Token Use", "file": "token-use.md"},
+                {"title": "Prompt Caching", "file": "prompt-caching.md"},
+                {"title": "Device Models", "file": "device-models.md"},
+                {"title": "RPC", "file": "rpc.md"},
+                {"title": "Session Management", "file": "session-management-compaction.md"},
+                {"title": "Transcript Hygiene", "file": "transcript-hygiene.md"},
+                {"title": "Wizard", "file": "wizard.md"},
+                {"title": "RELEASING", "file": "RELEASING.md"},
+                {"title": "Test", "file": "test.md"},
+                {"title": "SecretRef", "file": "secretref-credential-surface.md"},
+                {"title": "FAQ", "file": "faq.md"},
+                {"title": "Troubleshooting", "file": "troubleshooting.md"},
+                {"title": "Debugging", "file": "debugging.md"},
+                {"title": "Environment", "file": "environment.md"},
+                {"title": "Scripts", "file": "scripts.md"},
+                {"title": "Testing", "file": "testing.md"},
+                {"title": "Features", "file": "features.md"},
+                {"title": "Messages", "file": "messages.md"},
+                {"title": "Markdown Formatting", "file": "markdown-formatting.md"},
+                {"title": "Streaming", "file": "streaming.md"},
+                {"title": "Retry", "file": "retry.md"},
+                {"title": "Queue", "file": "queue.md"},
+                {"title": "OAuth", "file": "oauth.md"},
+                {"title": "Timezone", "file": "timezone.md"},
+                {"title": "TypeBox", "file": "typebox.md"},
+                {"title": "Date Time", "file": "date-time.md"},
+                {"title": "Manifest", "file": "manifest.md"},
+                {"title": "Agent Tools", "file": "agent-tools.md"},
+                {"title": "Voice Call", "file": "voice-call.md"},
+                {"title": "Community Plugins", "file": "community.md"},
+                {"title": "Pi Integration", "file": "pi.md"},
+                {"title": "Pi Dev", "file": "pi-dev.md"},
+                {"title": "OpenProse", "file": "prose.md"},
+                {"title": "VPS", "file": "vps.md"},
+                {"title": "CI", "file": "ci.md"},
+                {"title": "Flags", "file": "flags.md"},
+                {"title": "Multi-Agent", "file": "multi-agent.md"},
+                {"title": "Context", "file": "context.md"},
+                {"title": "Compaction", "file": "compaction.md"},
+                {"title": "System Prompt", "file": "system-prompt.md"},
+                {"title": "Presence", "file": "presence.md"},
+                {"title": "Typing Indicators", "file": "typing-indicators.md"},
+                {"title": "Model Providers", "file": "model-providers.md"},
+                {"title": "Model Failover", "file": "model-failover.md"},
+                {"title": "Usage Tracking", "file": "usage-tracking.md"},
+                {"title": "TTS", "file": "tts.md"},
+                {"title": "Perplexity", "file": "perplexity.md"},
+                {"title": "Brave Search", "file": "brave-search.md"},
+                {"title": "Architecture", "file": "architecture.md"},
+                {"title": "PI", "file": "pi.md"}
+            ]
+        };
+        
+        const categoryInfo = {
+            "get-started": { icon: "🚀", title: "Get Started 入门" },
+            "install": { icon: "📦", title: "Install 安装" },
+            "channels": { icon: "💬", title: "Channels 消息渠道" },
+            "agents": { icon: "🤖", title: "Agents 代理" },
+            "tools": { icon: "🛠️", title: "Tools 工具" },
+            "models": { icon: "🧠", title: "Models 模型" },
+            "platforms": { icon: "📱", title: "Platforms 平台" },
+            "gateway-ops": { icon: "🔧", title: "Gateway & Ops" },
+            "reference": { icon: "📚", title: "Reference 参考" }
+        };
+        
+        let totalDocs = 0;
+        Object.values(docs).forEach(arr => totalDocs += arr.length);
+        document.getElementById('total-docs').textContent = totalDocs;
+        document.getElementById('fetch-time').textContent = new Date().toLocaleDateString('zh-CN');
+        
+        function renderCategories() {
+            const container = document.getElementById('categories');
+            container.innerHTML = '';
+            
+            Object.entries(docs).forEach(([cat, files]) => {
+                const info = categoryInfo[cat] || { icon: "📄", title: cat };
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                card.innerHTML = `
+                    <div class="category-icon">${info.icon}</div>
+                    <div class="category-title">${info.title}</div>
+                    <div class="category-count">${files.length} 篇文档</div>
+                    <ul class="doc-list">
+                        ${files.map(doc => `
+                            <li><a href="#" onclick="openDoc('${cat}', '${doc.file}', '${doc.title}'); return false;">${doc.title}</a></li>
+                        `).join('')}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        async function openDoc(category, file, title) {
+            const viewer = document.getElementById('docViewer');
+            const content = document.getElementById('docContent');
+            content.innerHTML = '<p>加载中...</p>';
+            viewer.classList.add('active');
+            
+            try {
+                const response = await fetch(`${category}/${file}`);
+                const text = await response.text();
+                const html = parseMarkdown(text);
+                content.innerHTML = `<h1>${title}</h1>${html}`;
+            } catch (err) {
+                content.innerHTML = `<p>加载失败：${err.message}</p>`;
+            }
+        }
+        
+        function closeDoc(e) {
+            if (e.target.id === 'docViewer') {
+                document.getElementById('docViewer').classList.remove('active');
+            }
+        }
+        
+        function parseMarkdown(text) {
+            // 移除 frontmatter
+            text = text.replace(/^---[\s\S]*?---\n\n/, '');
+            
+            // 简单的 Markdown 解析
+            text = text
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+                .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                .replace(/`([^`]+)`/gim, '<code>$1</code>')
+                .replace(/```(\w*)\n([\s\S]*?)```/gim, '<pre><code>$2</code></pre>')
+                .replace(/^\- (.*$)/gim, '<li>$1</li>')
+                .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
+                .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
+                .replace(/\n/gim, '<br>');
+            
+            return text;
+        }
+        
+        function searchDocs() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const cards = document.querySelectorAll('.category-card');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+        
+        renderCategories();
+    </script>
+</body>
+</html>

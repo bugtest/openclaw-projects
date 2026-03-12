@@ -1,0 +1,41 @@
+# Prometheus 配置文件
+
+global:
+  scrape_interval: 15s      # 每 15 秒采集一次
+  evaluation_interval: 15s  # 每 15 秒评估一次规则
+
+# 告警规则（可选）
+# rule_files:
+#   - "alerts.yml"
+
+# 抓取配置
+scrape_configs:
+  # OpenClaw Exporter
+  - job_name: 'openclaw-exporter'
+    static_configs:
+      - targets: ['host.docker.internal:9090']
+    # 如果 Prometheus 和 exporter 在同一网络，直接用：
+    # - targets: ['exporter:9090']
+    
+    # 采集间隔
+    scrape_interval: 10s
+    
+    # 超时设置
+    scrape_timeout: 5s
+    
+    # 指标路径
+    metrics_path: /metrics
+    
+    # 标签
+    labels:
+      env: 'production'
+      service: 'openclaw'
+
+  # Prometheus 自监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9091']
+
+# 远程写入（可选，用于长期存储）
+# remote_write:
+#   - url: "http://your-remote-storage:9201/write"

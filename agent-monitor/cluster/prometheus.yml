@@ -1,0 +1,56 @@
+# Prometheus 集群配置
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'openclaw-cluster'
+
+# 告警规则（可选）
+# rule_files:
+#   - "alerts.yml"
+
+# 抓取配置
+scrape_configs:
+  # OpenClaw Exporter - 文件服务发现
+  - job_name: 'openclaw-cluster'
+    file_sd_configs:
+      - files:
+          - '/etc/prometheus/targets/*.json'
+        refresh_interval: 30s
+    
+    # 指标路径
+    metrics_path: /metrics
+    
+    # 超时设置
+    scrape_timeout: 10s
+    
+    # Relabel 配置 - 添加实例标签
+    relabel_configs:
+      # 从地址提取 instance 标签
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+):\d+'
+        replacement: '${1}'
+      
+      # 添加 scrape 端口标签
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: '${1}'
+
+  # Prometheus 自监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9091']
+    labels:
+      instance: 'prometheus'
+
+# 远程写入（可选，用于长期存储到 Thanos/Cortex）
+# remote_write:
+#   - url: "http://thanos-receive:19291/api/v1/receive"
+#     remote_timeout: 30s
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 50
+#       max_samples_per_send: 10000
